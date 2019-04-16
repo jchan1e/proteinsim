@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
+#include <cstring>
 
 #include <iostream>
 #include <fstream>
@@ -21,10 +22,15 @@ float ke = 0.01; // Electrostatic Constant
 float kh = -0.1; // Hydrophobicity Constant
 float kc = 1.0;  // Collision Force Constant
 
+int compMode = 0; // 0 = single thread
+                  // 1 = multi thread
+                  // 2 = GPU
+
 ///////////////////////////////////
 
 void physics(int n, float* nodes, vector<float>* hist)
 {
+#pragma omp parallel for if(compMode == 1)
   for (int i=0; i < n; ++i)
   {
     float hx = 0.0;
@@ -129,9 +135,9 @@ void physics(int n, float* nodes, vector<float>* hist)
   for (int i=0; i < n; ++i)
   {
     // damping
-    nodes[8*i + 3] *= 0.999;
-    nodes[8*i + 4] *= 0.999;
-    nodes[8*i + 5] *= 0.999;
+    nodes[8*i + 3] *= 0.9999;
+    nodes[8*i + 4] *= 0.9999;
+    nodes[8*i + 5] *= 0.9999;
     // update positions
     nodes[8*i + 0] += 0.1*nodes[8*i + 3];
     nodes[8*i + 1] += 0.1*nodes[8*i + 4];
@@ -144,12 +150,39 @@ void physics(int n, float* nodes, vector<float>* hist)
 
 int main(int argc, char *argv[])
 {
-  //Initialize
+  // flags
+  for (int i=0; i < argc; ++i)
+  {
+    if (strcmp(argv[i],"-m") == 0)
+    {
+      compMode = 1;
+      for (int j=i+1; j < argc; ++j)
+      {
+        argv[j-1] = argv[j];
+      }
+      i--;
+      argc--;
+    }
+    if (strcmp(argv[i],"-g") == 0)
+    {
+      compMode = 2;
+      for (int j=i+1; j < argc; ++j)
+      {
+        argv[j-1] = argv[j];
+      }
+      i--;
+      argc--;
+    }
+  }
+
+  // args
   if (argc != 3 && argc != 4)
   {
     cerr << "Usage: sim infile outfile [num_frames]\n";
     return 1;
   }
+
+  //Initialize
   int num_frames = 6000;
   if (argc == 4) num_frames = stoi(argv[3]);
   ifstream infile(argv[1]);
