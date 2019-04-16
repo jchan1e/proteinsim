@@ -59,16 +59,19 @@ void physics(int n, float* nodes, vector<float>* hist)
         float e2 = nodes[8*j + 7];
 
         // Hydrophobic forces
-        hx = kh*h1*h2*(pow(max(dist,1.0f),-14) - pow(max(dist,1.0f),-8)) * dx/dist;
-        hy = kh*h1*h2*(pow(max(dist,1.0f),-14) - pow(max(dist,1.0f),-8)) * dy/dist;
-        hz = kh*h1*h2*(pow(max(dist,1.0f),-14) - pow(max(dist,1.0f),-8)) * dz/dist;
+        // Fh = Kh*h1*h2/(r^14-r^8)
+        hx = kh*h1*h2*(pow(dist,-14) - pow(dist,-8)) * dx/dist;
+        hy = kh*h1*h2*(pow(dist,-14) - pow(dist,-8)) * dy/dist;
+        hz = kh*h1*h2*(pow(dist,-14) - pow(dist,-8)) * dz/dist;
 
         // Electrsostatic forces
+        // Fe = k*q1*q2/r^2
         ex = ke*e1*e2/(dist*dist) * dx/dist;
         ey = ke*e1*e2/(dist*dist) * dy/dist;
         ez = ke*e1*e2/(dist*dist) * dz/dist;
 
         // Collision forces
+        // soft collisions, spring force model
         if (dist < 1.0)
         {
           cx = kc*(1.0-dist) * dx/dist;

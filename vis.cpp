@@ -66,7 +66,7 @@ SDL_Window* window = NULL;
 SDL_GLContext context;
 
 //Timing
-int ff = 16; //milliseconds per frame
+int ff = 8; //milliseconds per frame
 int r = 0;
 int dr = 0;
 int oldr = 0;
@@ -159,7 +159,7 @@ void display()
     // Light position and rendered marker (unlit)
 
     // lighting colors/types
-    Ambient[0] = 0.12; Ambient[1] = 0.15; Ambient[2] = 0.16; Ambient[3] = 1.0;
+    Ambient[0] = 0.30; Ambient[1] = 0.32; Ambient[2] = 0.35; Ambient[3] = 1.0;
     Diffuse[0] = 0.65; Diffuse[1] = 0.65; Diffuse[2] = 0.60; Diffuse[3] = 1.0;
     Specular[0] = 0.7; Specular[1] = 0.7; Specular[2] = 1.0; Specular[3] = 1.0;
     shininess[0] = 512;
@@ -203,7 +203,7 @@ void display()
     for (int i=0; i < n_aminos; i += 1)
     {
         float r = 0.75 + aminoList[2*i + 1]/2;
-        float g = 0.75 - aminoList[2*i + 0]/2;
+        float g = 0.75 + aminoList[2*i + 0]/2;
         float b = 0.75 - aminoList[2*i + 1]/2;
         glColor3f(r,g,b);
         double x = sim[step*3*n_aminos + 3*i + 0];
@@ -324,21 +324,21 @@ void keyboard(const Uint8* state)
         quit = true;
 
     if (state[SDL_SCANCODE_LEFT])
-        dth = 0.5;
+        dth = 1.0;
     else if (state[SDL_SCANCODE_RIGHT])
-        dth = -0.5;
+        dth = -1.0;
     else
         dth = 0;
     if (state[SDL_SCANCODE_UP])
-        dph = 0.5;
+        dph = 1.0;
     else if (state[SDL_SCANCODE_DOWN])
-        dph = -0.5;
+        dph = -1.0;
     else
         dph = 0;
     if (state[SDL_SCANCODE_Z])
-        dzoom = -0.10;
+        dzoom = -0.20;
     else if (state[SDL_SCANCODE_X])
-        dzoom = 0.10;
+        dzoom = 0.20;
     else
         dzoom = 0;
 }
