@@ -18,10 +18,10 @@ S_CFLG=-g -O3 -Wall
 S_LIBS=-lm 
 endif
 #  OSX/Linux/Unix/Solaris
-CLEAN=rm -rf sim vis *.o *.a *.dSYM
+CLEAN=rm -rf sim simg vis *.o *.a *.dSYM
 endif
 
-all:sim vis
+all:sim simg vis
 
 #  Compile
 #.c.o:
@@ -31,8 +31,11 @@ all:sim vis
 vis.o:vis.cpp objects.h pixlight.vert pixlight.frag
 	g++ -std=c++11 -c $(V_CFLG) $<
 
-sim.o:sim.cpp objects.h pixlight.vert pixlight.frag
+sim.o:sim.cpp
 	g++ -std=c++11 -c $(S_CFLG) $< -fopenmp
+
+simg.o:sim.cu
+	nvcc -c -O3 -Xcompiler "-std=c++11 -c $(S_CFLG)" -o $@ $<
 
 objects.o: objects.cpp objects.h
 	g++ -c $(V_CFLG) $<
@@ -43,6 +46,9 @@ vis:vis.o objects.o
 
 sim:sim.o
 	g++ -g -O3 -o $@ $^ $(S_LIBS) -fopenmp
+
+simg:simg.o
+	nvcc -o $@ $^ -g -O3 $(S_LIBS)
 
 #  Clean
 clean:
