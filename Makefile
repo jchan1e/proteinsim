@@ -32,7 +32,7 @@ vis.o:vis.cpp objects.h pixlight.vert pixlight.frag
 	g++ -std=c++11 -c $(V_CFLG) $<
 
 sim.o:sim.cpp objects.h pixlight.vert pixlight.frag
-	g++ -std=c++11 -c $(S_CFLG) $<
+	g++ -std=c++11 -c $(S_CFLG) $< -fopenmp
 
 objects.o: objects.cpp objects.h
 	g++ -c $(V_CFLG) $<
@@ -42,7 +42,7 @@ vis:vis.o objects.o
 	g++ -g -O3 -o $@ $^ $(V_LIBS)
 
 sim:sim.o
-	g++ -g -O3 -o $@ $^ $(S_LIBS)
+	g++ -g -O3 -o $@ $^ $(S_LIBS) -fopenmp
 
 #  Clean
 clean:

@@ -18,8 +18,8 @@ using namespace std;
 ////////////////////
 
 float k = 1.0; // Bond Spring Constant
-float ke = 0.01; // Electrostatic Constant
-float kh = -0.1; // Hydrophobicity Constant
+float ke = -0.01; // Electrostatic Constant
+float kh = -0.2; // Hydrophobicity Constant
 float kc = 1.0;  // Collision Force Constant
 
 int compMode = 0; // 0 = single thread
@@ -66,15 +66,16 @@ void physics(int n, float* nodes, vector<float>* hist)
 
         // Hydrophobic forces
         // Fh = Kh*h1*h2/(r^14-r^8)
-        hx = kh*h1*h2*(pow(dist,-14) - pow(dist,-8)) * dx/dist;
-        hy = kh*h1*h2*(pow(dist,-14) - pow(dist,-8)) * dy/dist;
-        hz = kh*h1*h2*(pow(dist,-14) - pow(dist,-8)) * dz/dist;
+        float d = max(dist, 1.0f);
+        hx = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * dx/dist;
+        hy = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * dy/dist;
+        hz = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * dz/dist;
 
         // Electrsostatic forces
         // Fe = k*q1*q2/r^2
-        ex = ke*e1*e2/(dist*dist) * dx/dist;
-        ey = ke*e1*e2/(dist*dist) * dy/dist;
-        ez = ke*e1*e2/(dist*dist) * dz/dist;
+        ex = ke*e1*e2/min(dist*dist, 1.0f) * dx/dist;
+        ey = ke*e1*e2/min(dist*dist, 1.0f) * dy/dist;
+        ez = ke*e1*e2/min(dist*dist, 1.0f) * dz/dist;
 
         // Collision forces
         // soft collisions, spring force model
@@ -135,9 +136,9 @@ void physics(int n, float* nodes, vector<float>* hist)
   for (int i=0; i < n; ++i)
   {
     // damping
-    nodes[8*i + 3] *= 0.9999;
-    nodes[8*i + 4] *= 0.9999;
-    nodes[8*i + 5] *= 0.9999;
+    nodes[8*i + 3] *= 0.9995;
+    nodes[8*i + 4] *= 0.9995;
+    nodes[8*i + 5] *= 0.9995;
     // update positions
     nodes[8*i + 0] += 0.1*nodes[8*i + 3];
     nodes[8*i + 1] += 0.1*nodes[8*i + 4];
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
     outfile.close();
   }
 
-  cout << "Shutting Down\n";
+  //cout << "Shutting Down\n";
 
   delete[] aminos;
 

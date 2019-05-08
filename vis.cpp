@@ -202,9 +202,9 @@ void display()
 
     for (int i=0; i < n_aminos; i += 1)
     {
-        float r = 0.75 + aminoList[2*i + 1]/2;
-        float g = 0.75 + aminoList[2*i + 0]/2;
-        float b = 0.75 - aminoList[2*i + 1]/2;
+        float r = 0.70 + aminoList[2*i + 1]*0.3;
+        float g = 0.70 + aminoList[2*i + 0]*0.3;
+        float b = 0.70 - aminoList[2*i + 1]*0.3;
         glColor3f(r,g,b);
         double x = sim[step*3*n_aminos + 3*i + 0];
         double y = sim[step*3*n_aminos + 3*i + 1];
