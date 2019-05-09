@@ -31,125 +31,132 @@ __global__ void physics(const int n, const int frame, const float* aminosPrev, f
   float kc = 1.0;  // Collision Force Constant
 
   int i = blockIdx.x*blockDim.x + threadIdx.x;
-  float hx = 0.0;
-  float hy = 0.0;
-  float hz = 0.0;
-  float ex = 0.0;
-  float ey = 0.0;
-  float ez = 0.0;
-  float cx = 0.0;
-  float cy = 0.0;
-  float cz = 0.0;
-  float fx = 0.0;
-  float fy = 0.0;
-  float fz = 0.0;
-  for (int j=0; j < n; ++j)
+  if (i < n)
   {
-    if (i != j)
+    float hx = 0.0;
+    float hy = 0.0;
+    float hz = 0.0;
+    float ex = 0.0;
+    float ey = 0.0;
+    float ez = 0.0;
+    float cx = 0.0;
+    float cy = 0.0;
+    float cz = 0.0;
+    float fx = 0.0;
+    float fy = 0.0;
+    float fz = 0.0;
+    for (int j=0; j < n; ++j)
     {
-      //calculate forces
+      if (i != j)
+      {
+        //calculate forces
+        float x1 = aminosPrev[8*i + 0];
+        float y1 = aminosPrev[8*i + 1];
+        float z1 = aminosPrev[8*i + 2];
+        float x2 = aminosPrev[8*j + 0];
+        float y2 = aminosPrev[8*j + 1];
+        float z2 = aminosPrev[8*j + 2];
+        float dx = x2-x1;
+        float dy = y2-y1;
+        float dz = z2-z1;
+        float dist = sqrt(dx*dx + dy*dy + dz*dz);
+        float h1 = aminosPrev[8*i + 6];
+        float e1 = aminosPrev[8*i + 7];
+        float h2 = aminosPrev[8*j + 6];
+        float e2 = aminosPrev[8*j + 7];
+
+        float vx = dx/dist;
+        float vy = dy/dist;
+        float vz = dz/dist;
+
+        // Hydrophobic forces
+        // Fh = Kh*h1*h2/(r^14-r^8)
+        float d = max(dist, 1.0f);
+        hx = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * vx;
+        hy = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * vy;
+        hz = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * vz;
+
+        // Electrsostatic forces
+        // Fe = k*q1*q2/r^2
+        ex = ke*e1*e2/min(dist*dist, 1.0f) * vx;
+        ey = ke*e1*e2/min(dist*dist, 1.0f) * vy;
+        ez = ke*e1*e2/min(dist*dist, 1.0f) * vz;
+
+        // Collision forces
+        // soft collisions, spring force model
+        cx = 0.0;
+        cy = 0.0;
+        cz = 0.0;
+        if (dist < 1.0)
+        {
+          cx = kc*(1.0-dist) * vx;
+          cy = kc*(1.0-dist) * vy;
+          cz = kc*(1.0-dist) * vz;
+        }
+
+        //if (hx*hx + hy*hy + hz*hz > 0.01)
+        //  cout << "H" << i << ":\t"<< hx << "\t" << hy << "\t" << hz << "\t" << dist << endl;
+        //if (ex*ex + ey*ey + ez*ez > 0.01)
+        //  cout << "E" << i << ":\t"<< ex << "\t" << ey << "\t" << ez << "\t" << dist << endl;
+        //if (cx*cx + cy*cy + cz*cz > 0.01)
+        //  cout << "C" << i << ":\t"<< cx << "\t" << cy << "\t" << cz << "\t" << dist << endl;
+
+        fx += hx + ex - cx;
+        fy += hy + ey - cy;
+        fz += hz + ez - cz;
+      }
+    }
+    // spring tension
+    if (i > 0)
+    {
       float x1 = aminosPrev[8*i + 0];
       float y1 = aminosPrev[8*i + 1];
       float z1 = aminosPrev[8*i + 2];
-      float x2 = aminosPrev[8*j + 0];
-      float y2 = aminosPrev[8*j + 1];
-      float z2 = aminosPrev[8*j + 2];
+      float x2 = aminosPrev[8*(i-1) + 0];
+      float y2 = aminosPrev[8*(i-1) + 1];
+      float z2 = aminosPrev[8*(i-1) + 2];
       float dx = x2-x1;
       float dy = y2-y1;
       float dz = z2-z1;
       float dist = sqrt(dx*dx + dy*dy + dz*dz);
-      float h1 = aminosPrev[8*i + 6];
-      float e1 = aminosPrev[8*i + 7];
-      float h2 = aminosPrev[8*j + 6];
-      float e2 = aminosPrev[8*j + 7];
-
-      float vx = dx/dist;
-      float vy = dy/dist;
-      float vz = dz/dist;
-
-      // Hydrophobic forces
-      // Fh = Kh*h1*h2/(r^14-r^8)
-      float d = max(dist, 1.0f);
-      hx = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * vx;
-      hy = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * vy;
-      hz = kh*h1*h2*(pow(d,-14) - pow(d,-8)) * vz;
-
-      // Electrsostatic forces
-      // Fe = k*q1*q2/r^2
-      ex = ke*e1*e2/min(dist*dist, 1.0f) * vx;
-      ey = ke*e1*e2/min(dist*dist, 1.0f) * vy;
-      ez = ke*e1*e2/min(dist*dist, 1.0f) * vz;
-
-      // Collision forces
-      // soft collisions, spring force model
-      cx = 0.0;
-      cy = 0.0;
-      cz = 0.0;
-      if (dist < 1.0)
-      {
-        cx = kc*(1.0-dist) * vx;
-        cy = kc*(1.0-dist) * vy;
-        cz = kc*(1.0-dist) * vz;
-      }
-
-      //if (hx*hx + hy*hy + hz*hz > 0.01)
-      //  cout << "H" << i << ":\t"<< hx << "\t" << hy << "\t" << hz << "\t" << dist << endl;
-      //if (ex*ex + ey*ey + ez*ez > 0.01)
-      //  cout << "E" << i << ":\t"<< ex << "\t" << ey << "\t" << ez << "\t" << dist << endl;
-      //if (cx*cx + cy*cy + cz*cz > 0.01)
-      //  cout << "C" << i << ":\t"<< cx << "\t" << cy << "\t" << cz << "\t" << dist << endl;
-
-      fx += hx + ex - cx;
-      fy += hy + ey - cy;
-      fz += hz + ez - cz;
+      fx += k*(dist-1.0) * dx/dist;
+      fy += k*(dist-1.0) * dy/dist;
+      fz += k*(dist-1.0) * dz/dist;
     }
-  }
-  // spring tension
-  if (i > 0)
-  {
-    float x1 = aminosPrev[8*i + 0];
-    float y1 = aminosPrev[8*i + 1];
-    float z1 = aminosPrev[8*i + 2];
-    float x2 = aminosPrev[8*(i-1) + 0];
-    float y2 = aminosPrev[8*(i-1) + 1];
-    float z2 = aminosPrev[8*(i-1) + 2];
-    float dx = x2-x1;
-    float dy = y2-y1;
-    float dz = z2-z1;
-    float dist = sqrt(dx*dx + dy*dy + dz*dz);
-    fx += k*(dist-1.0) * dx/dist;
-    fy += k*(dist-1.0) * dy/dist;
-    fz += k*(dist-1.0) * dz/dist;
-  }
-  if (i < n-1)
-  {
-    float x1 = aminosPrev[8*i + 0];
-    float y1 = aminosPrev[8*i + 1];
-    float z1 = aminosPrev[8*i + 2];
-    float x2 = aminosPrev[8*(i+1) + 0];
-    float y2 = aminosPrev[8*(i+1) + 1];
-    float z2 = aminosPrev[8*(i+1) + 2];
-    float dx = x2-x1;
-    float dy = y2-y1;
-    float dz = z2-z1;
-    float dist = sqrt(dx*dx + dy*dy + dz*dz);
-    fx += k*(dist-1.0) * dx/dist;
-    fy += k*(dist-1.0) * dy/dist;
-    fz += k*(dist-1.0) * dz/dist;
-  }
+    if (i < n-1)
+    {
+      float x1 = aminosPrev[8*i + 0];
+      float y1 = aminosPrev[8*i + 1];
+      float z1 = aminosPrev[8*i + 2];
+      float x2 = aminosPrev[8*(i+1) + 0];
+      float y2 = aminosPrev[8*(i+1) + 1];
+      float z2 = aminosPrev[8*(i+1) + 2];
+      float dx = x2-x1;
+      float dy = y2-y1;
+      float dz = z2-z1;
+      float dist = sqrt(dx*dx + dy*dy + dz*dz);
+      fx += k*(dist-1.0) * dx/dist;
+      fy += k*(dist-1.0) * dy/dist;
+      fz += k*(dist-1.0) * dz/dist;
+    }
 
-  // update velocities
-  aminosNext[8*i+3] += fx;
-  aminosNext[8*i+4] += fy;
-  aminosNext[8*i+5] += fz;
-  // update positions
-  aminosNext[8*i+0] += aminosPrev[8*i+3];
-  aminosNext[8*i+1] += aminosPrev[8*i+4];
-  aminosNext[8*i+2] += aminosPrev[8*i+5];
-  // copy to history
-  history[3*n*frame + 0] = aminosNext[8*i+0];
-  history[3*n*frame + 1] = aminosNext[8*i+1];
-  history[3*n*frame + 2] = aminosNext[8*i+2];
+    // update velocities
+    aminosNext[8*i+3] = aminosPrev[8*i+3] + fx;
+    aminosNext[8*i+4] = aminosPrev[8*i+4] + fy;
+    aminosNext[8*i+5] = aminosPrev[8*i+5] + fz;
+    // damping
+    aminosNext[8*i+3] *= 0.9995;
+    aminosNext[8*i+4] *= 0.9995;
+    aminosNext[8*i+5] *= 0.9995;
+    // update positions
+    aminosNext[8*i+0] = aminosPrev[8*i+0] + 0.1*aminosNext[8*i+3];
+    aminosNext[8*i+1] = aminosPrev[8*i+1] + 0.1*aminosNext[8*i+4];
+    aminosNext[8*i+2] = aminosPrev[8*i+2] + 0.1*aminosNext[8*i+5];
+    // copy to history
+    history[3*n*frame + 3*i + 0] = aminosNext[8*i+0];
+    history[3*n*frame + 3*i + 1] = aminosNext[8*i+1];
+    history[3*n*frame + 3*i + 2] = aminosNext[8*i+2];
+  }
 }
 
 ///////////////////////////////////
@@ -342,7 +349,7 @@ int main(int argc, char *argv[])
   //aminos[nAminos*8-3] = -0.01;
 
   //vector<float> history;
-  float* history = new float[nAminos*num_frames];
+  float* history = new float[3*nAminos*num_frames];
   int frames = 0;
 
   float* g_aminos1 = NULL;
@@ -358,7 +365,12 @@ int main(int argc, char *argv[])
   ////////Main Loop////////
   while (frames < num_frames)
   {
-    physics<<<nAminos/256,256>>>(nAminos, frames, g_aminos1, g_aminos2, g_history);
+    physics<<<max(1,nAminos/128),128>>>(nAminos, frames, g_aminos1, g_aminos2, g_history);
+//    float test[8];
+//    cudaMemcpy(&test, g_aminos2, 8*sizeof(float), cudaMemcpyDeviceToHost);
+//    for (int i=0; i < 8; ++i)
+//      cout << test[i] << " ";
+//    cout << endl;
     frames += 1;
     float* tmp = g_aminos1;
     g_aminos1 = g_aminos2;
@@ -367,6 +379,13 @@ int main(int argc, char *argv[])
 
   // wait and copy back history
   cudaMemcpy(history, g_history, 3*num_frames*nAminos*sizeof(float), cudaMemcpyDeviceToHost);
+
+//  for (int i=0; i < frames; ++i)
+//  {
+//    cout << history[3*nAminos*i + 0 + 0] << " ";
+//    cout << history[3*nAminos*i + 0 + 1] << " ";
+//    cout << history[3*nAminos*i + 0 + 2] << endl;
+//  }
 
   // write to file
   ofstream outfile(argv[2], ofstream::binary);
