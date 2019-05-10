@@ -1,6 +1,6 @@
 ## Coarse Grained Protein Simulation
 
-A simple simulation and visualization of basic coarse grained protein folding using C++ and OpenGL. \\
+A simple simulation and visualization of basic coarse grained protein folding using C++ and OpenGL.  
 
 Compile all components
 ```
